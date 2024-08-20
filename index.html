@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תכנון חודשי ודיווח נוכחות - מתי"א בני-ברק</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #logo { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+        h1, h2 { text-align: center; }
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 20px; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .day { border: 1px solid #ccc; padding: 5px; min-height: 80px; }
+        .day-header { font-weight: bold; text-align: center; }
+        .day-content { display: flex; flex-direction: column; height: 100%; }
+        .day-number { font-weight: bold; margin-bottom: 5px; }
+        .day-text { flex-grow: 1; width: 100%; border: none; resize: none; font-size: 0.8em; }
+        input, textarea { width: 100%; padding: 5px; margin-top: 5px; }
+        button { margin-top: 20px; padding: 10px; background-color: #007bff; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <img id="logo" src="logo.png" alt="לוגו מתי״א בני-ברק">
+    <h1>תכנון חודשי ודיווח נוכחות</h1>
+
+    <form id="attendanceForm" action="https://formsubmit.co/matyabbworkers@gmail.com" method="POST">
+        <h2>פרטי עובד</h2>
+        <label for="name">שם:</label>
+        <input type="text" id="name" name="שם" required>
+        
+        <label for="id">ת"ז:</label>
+        <input type="text" id="id" name="תעודת_זהות" required>
+        
+        <label for="position">תפקיד בצוות:</label>
+        <input type="text" id="position" name="תפקיד" required>
+
+        <h2>תכנון חודשי</h2>
+        <div class="calendar-header">
+            <button type="button" id="prevMonth">הקודם</button>
+            <h3 id="currentMonthYear"></h3>
+            <button type="button" id="nextMonth">הבא</button>
+        </div>
+        <div id="calendar" class="calendar"></div>
+        <input type="hidden" id="calendarData" name="נתוני_לוח_שנה">
+
+        <h2>דיווח על היעדרויות</h2>
+        <label for="absences">האם נעדרת החודש מהעבודה? באלו תאריכים?</label>
+        <textarea id="absences" name="היעדרויות" rows="3"></textarea>
+
+        <h2>דיווח על שעות נוספות</h2>
+        <label for="overtime">האם עבדת החודש שעות נוספות? באלו תאריכים וכמה שעות?</label>
+        <textarea id="overtime" name="שעות_נוספות" rows="3"></textarea>
+
+        <input type="hidden" name="_subject" value="דיווח נוכחות חדש">
+        <input type="hidden" name="_template" value="table">
+
+        <button type="submit">שלח דיווח</button>
+    </form>
+
+    <script>
+        const daysOfWeek = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+        const monthNames = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
+        let currentDate = new Date();
+        let calendarData = {};
+
+        function createCalendar(year, month) {
+            const calendar = document.getElementById('calendar');
+            calendar.innerHTML = '';
+            
+            daysOfWeek.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'day-header';
+                dayHeader.textContent = day;
+                calendar.appendChild(dayHeader);
+            });
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+
+            for (let i = 0; i < firstDay.getDay(); i++) {
+                calendar.appendChild(document.createElement('div'));
+            }
+
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const dayElement = document.createElement('div');
+                dayElement.className = 'day';
+                const dateString = `${year}-${month+1}-${day}`;
+                dayElement.innerHTML = `
+                    <div class="day-content">
+                        <div class="day-number">${day}</div>
+                        <textarea class="day-text" data-date="${dateString}">${calendarData[dateString] || ''}</textarea>
+                    </div>
+                `;
+                calendar.appendChild(dayElement);
+            }
+
+            document.getElementById('currentMonthYear').textContent = `${monthNames[month]} ${year}`;
+            
+            // הוספת מאזין אירועים לכל תיבות הטקסט
+            document.querySelectorAll('.day-text').forEach(textarea => {
+                textarea.addEventListener('input', function() {
+                    const date = this.getAttribute('data-date');
+                    calendarData[date] = this.value;
+                });
+            });
+        }
+
+        document.getElementById('prevMonth').onclick = () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            createCalendar(currentDate.getFullYear(), currentDate.getMonth());
+        };
+
+        document.getElementById('nextMonth').onclick = () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            createCalendar(currentDate.getFullYear(), currentDate.getMonth());
+        };
+
+        document.getElementById('attendanceForm').onsubmit = function(e) {
+            document.getElementById('calendarData').value = JSON.stringify(calendarData);
+        };
+
+        createCalendar(currentDate.getFullYear(), currentDate.getMonth());
+    </script>
+</body>
+</html>
